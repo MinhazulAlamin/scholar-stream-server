@@ -213,6 +213,15 @@ async function run() {
       res.send(result);
     });
 
+    app.delete("/scholarships/:id", async (req, res) => {
+      const id = req.params.id;
+      const result = await scholarshipsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
+
 
   } finally {
     await client.close();
