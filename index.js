@@ -221,6 +221,101 @@ async function run() {
       res.send(result);
     });
 
+    //APPLICATION RELATED APIs
+    const applicationsCollection = db.collection("Applications");
+    app.post("/applications", async (req, res) => {
+      try {
+        const application = req.body;
+
+        if (
+          !application.scholarshipId ||
+          !application.userId ||
+          !application.userEmail
+        ) {
+          return res.status(400).send({ message: "Invalid application data" });
+        }
+
+        const newApplication = {
+          scholarshipId: application.scholarshipId,
+          scholarshipName: application.scholarshipName,
+
+          userId: application.userId,
+          userName: application.userName,
+          userEmail: application.userEmail,
+
+          universityName: application.universityName,
+          universityCity: application.universityCity,
+          universityCountry: application.universityCountry,
+
+          scholarshipCategory: application.scholarshipCategory,
+          degree: application.degree,
+
+          applicationFees: application.applicationFees,
+          serviceCharge: application.serviceCharge,
+
+          applicationStatus: "pending",
+          paymentStatus: application.paymentStatus || "UNPAID",
+
+          applicationDate: new Date(),
+          feedback: "",
+        };
+
+        const result = await applicationsCollection.insertOne(newApplication);
+
+        res.send({
+          success: true,
+          insertedId: result.insertedId,
+        });
+      } catch (error) {
+        res.status(500).send({ message: error.message });
+      }
+    });
+
+    app.get("/applications", async (req, res) => {
+      const applications = applicationsCollection.find();
+      const result = await applications.toArray();
+      res.send(result);
+    });
+
+    app.get("/applications/:userID", async (req, res) => {
+      const userID = req.params.userID;
+      const query = { userId: userID };
+      const filteredApplication = applicationsCollection.find(query);
+      const result = await filteredApplication.toArray();
+      res.send(result);
+    });
+
+    app.delete("/applications/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const result = await applicationsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      res.send(result);
+    });
+
+    app.patch("/applications/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const { userName, userEmail, applicationStatus, feedback } = req.body;
+
+      const updateDoc = { $set: {} };
+
+      if (userName !== undefined) updateDoc.$set.userName = userName;
+      if (userEmail !== undefined) updateDoc.$set.userEmail = userEmail;
+      if (applicationStatus !== undefined)
+        updateDoc.$set.applicationStatus = applicationStatus;
+      if (feedback !== undefined) updateDoc.$set.feedback = feedback;
+
+      const result = await applicationsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        updateDoc
+      );
+
+      res.send(result);
+    });
+
 
 
   } finally {
