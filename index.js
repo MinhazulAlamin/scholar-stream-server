@@ -316,6 +316,96 @@ async function run() {
       res.send(result);
     });
 
+    //REVIEWS RELATED APIs
+    const reviewsCollection = db.collection("Reviews");
+
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+
+      const existingReview = await reviewsCollection.findOne({
+        scholarshipId: review.scholarshipId,
+        userId: review.userId,
+      });
+
+      if (existingReview) {
+        return res.status(409).send({
+          message: "You have already reviewed this scholarship",
+        });
+      }
+
+      const newReview = {
+        applicationId: review.applicationId,
+        scholarshipId: review.scholarshipId,
+        scholarshipName: review.scholarshipName,
+
+        universityName: review.universityName,
+        universityCity: review.universityCity,
+        universityCountry: review.universityCountry,
+
+        userId: review.userId,
+        userName: review.userName,
+        userEmail: review.userEmail,
+        userImage: review.userImage,
+
+        ratingPoint: review.rating,
+        reviewComment: review.comment,
+
+        reviewDate: new Date(),
+      };
+
+      const result = await reviewsCollection.insertOne(newReview);
+      res.send(result);
+    });
+
+    app.get("/reviews", async (req, res) => {
+      const reviews = await reviewsCollection.find().toArray();
+      res.send(reviews);
+    });
+
+    app.get("/reviews/:userID", async (req, res) => {
+      const userId = req.params.userID;
+
+      const reviews = await reviewsCollection.find({ userId }).toArray();
+
+      res.send(reviews);
+    });
+
+    app.get("/reviews/scholarship/:id", async (req, res) => {
+      const scholarshipId = req.params.id;
+
+      const reviews = await reviewsCollection.find({ scholarshipId }).toArray();
+
+      res.send(reviews);
+    });
+
+    app.delete("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+
+      const result = await reviewsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+
+      res.send(result);
+    });
+
+    app.patch("/reviews/:id", async (req, res) => {
+      const id = req.params.id;
+      const { ratingPoint, reviewComment } = req.body;
+
+      const result = await reviewsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            ratingPoint,
+            reviewComment,
+            reviewDate: new Date(),
+          },
+        }
+      );
+
+      res.send(result);
+    });
+
 
 
   } finally {
