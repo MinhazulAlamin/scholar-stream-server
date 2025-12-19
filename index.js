@@ -101,6 +101,92 @@ async function run() {
       res.send(result);
     });
 
+    //SCHOLARSHIP RELATED APIs
+
+    const scholarshipsCollection = db.collection("Scholarships");
+    app.post("/scholarships", async (req, res) => {
+      const newScholarship = req.body;
+      newScholarship.createdAt = new Date();
+      const result = await scholarshipsCollection.insertOne(newScholarship);
+      res.send(result);
+    });
+
+    app.get("/scholarships", async (req, res) => {
+      try {
+        const { search, category, order, page, limit } = req.query;
+
+        const matchStage = {};
+
+        if (search) {
+          matchStage.$or = [
+            { scholarshipName: { $regex: search, $options: "i" } },
+            { universityName: { $regex: search, $options: "i" } },
+            { degree: { $regex: search, $options: "i" } },
+          ];
+        }
+
+        if (category) {
+          matchStage.scholarshipCategory = category;
+        }
+
+        const sortOrder = order === "descending" ? -1 : 1;
+
+        const pipeline = [
+          { $match: matchStage },
+
+          {
+            $addFields: {
+              applicationFeesNumber: {
+                $toDouble: "$applicationFees",
+              },
+            },
+          },
+
+          {
+            $sort: {
+              applicationFeesNumber: sortOrder,
+            },
+          },
+        ];
+
+        if (page && limit) {
+          const pageNumber = Number(page);
+          const limitNumber = Number(limit);
+          const skip = (pageNumber - 1) * limitNumber;
+
+          const countPipeline = [{ $match: matchStage }, { $count: "total" }];
+
+          const countResult = await scholarshipsCollection
+            .aggregate(countPipeline)
+            .toArray();
+
+          const total = countResult[0]?.total || 0;
+
+          pipeline.push({ $skip: skip }, { $limit: limitNumber });
+
+          const data = await scholarshipsCollection
+            .aggregate(pipeline)
+            .toArray();
+
+          return res.send({
+            data,
+            total,
+            totalPages: Math.ceil(total / limitNumber),
+            currentPage: pageNumber,
+          });
+        }
+
+        const result = await scholarshipsCollection
+          .aggregate(pipeline)
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+        res.send({ message: "Failed to fetch scholarships" });
+      }
+    });
+
   } finally {
     await client.close();
   }
