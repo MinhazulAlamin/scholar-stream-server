@@ -53,6 +53,46 @@ async function run() {
       res.send(result);
     });
 
+     app.get("/users", async (req, res) => {
+      const users = usersCollection.find();
+      const result = await users.toArray();
+      res.send(result);
+    });
+
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ email });
+      res.send(user);
+    });
+
+    app.patch("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const { role } = req.body;
+
+      const updatedRole = {
+        $set: { role },
+      };
+      const result = await usersCollection.updateOne({ email }, updatedRole);
+      res.send(result);
+    });
+
+    app.patch("/users/profile/:id", async (req, res) => {
+      const id = req.params.id;
+      const { name, photoURL } = req.body;
+
+      const result = await usersCollection.updateOne(
+        { _id: new ObjectId(id) },
+        {
+          $set: {
+            name,
+            photoURL,
+          },
+        }
+      );
+
+      res.send(result);
+    });
+
   } finally {
     await client.close();
   }
