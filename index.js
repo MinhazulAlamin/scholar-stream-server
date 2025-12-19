@@ -187,6 +187,33 @@ async function run() {
       }
     });
 
+    app.get("/scholarships/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const filteredScholarship = await scholarshipsCollection.findOne(query);
+      res.send(filteredScholarship);
+    });
+
+    app.patch("/scholarships/:id", async (req, res) => {
+      const id = req.params.id;
+      const updatedData = req.body;
+
+      const filter = { _id: new ObjectId(id) };
+
+      const updateDoc = {
+        $set: updatedData,
+      };
+
+      const result = await scholarshipsCollection.updateOne(filter, updateDoc);
+
+      if (result.matchedCount === 0) {
+        return res.send({ message: "Scholarship not found" });
+      }
+
+      res.send(result);
+    });
+
+
   } finally {
     await client.close();
   }
