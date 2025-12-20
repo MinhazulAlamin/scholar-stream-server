@@ -1,15 +1,14 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
-const stripe = require('stripe');
+require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const Stripe = require("stripe");
 const port = process.env.PORT || 3000;
 
 //middlewire
 app.use(express.json());
 app.use(cors());
-
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.m4ciotl.mongodb.net/?appName=Cluster0`;
 
@@ -19,23 +18,51 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
+  },
+});
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+app.post("/create-payment-intent", async (req, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount) {
+      return res.status(400).send({ message: "Amount is required" });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency: "usd",
+      payment_method_types: ["card"],
+    });
+
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+    });
+  } catch (error) {
+    console.error("Stripe Error:", error.message);
+    res.status(500).send({ error: error.message });
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("Server is Available");
+});
 
 async function run() {
   try {
     await client.connect();
+    console.log("Connected");
 
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
     const db = client.db("ScholarshipStream");
 
- 
-    //Users Related APIs
-
-        const usersCollection = db.collection("Users");
+    //USERS RELATED APIs
+    const usersCollection = db.collection("Users");
     app.post("/users", async (req, res) => {
       const newUser = req.body;
 
@@ -53,7 +80,7 @@ async function run() {
       res.send(result);
     });
 
-     app.get("/users", async (req, res) => {
+    app.get("/users", async (req, res) => {
       const users = usersCollection.find();
       const result = await users.toArray();
       res.send(result);
@@ -102,7 +129,6 @@ async function run() {
     });
 
     //SCHOLARSHIP RELATED APIs
-
     const scholarshipsCollection = db.collection("Scholarships");
     app.post("/scholarships", async (req, res) => {
       const newScholarship = req.body;
@@ -405,19 +431,11 @@ async function run() {
 
       res.send(result);
     });
-
-
-
+  } catch {
   } finally {
-    await client.close();
   }
 }
 run().catch(console.dir);
-
-app.get("/", (req, res) => {
-  res.send("Scholar Stream");
-});
-
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log("User server is running on port:", port);
 });
