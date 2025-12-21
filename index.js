@@ -51,8 +51,8 @@ app.get("/", (req, res) => {
 
 async function run() {
   try {
-    await client.connect();
-    console.log("Connected");
+    // await client.connect();
+    // console.log("Connected");
 
     // await client.db("admin").command({ ping: 1 });
     // console.log(
@@ -430,9 +430,12 @@ async function run() {
 
       res.send(result);
     });
-  } catch {
-  } finally {
-  }
+  } catch (error) {
+  console.error("❌ Error in run():", error.message);
+} finally {
+  console.log("🔄 Finished run() execution");
+}
+
 }
 run().catch(console.dir);
 app.listen(port, () => {
