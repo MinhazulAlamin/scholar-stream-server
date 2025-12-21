@@ -6,7 +6,6 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const Stripe = require("stripe");
 const port = process.env.PORT || 3000;
 
-//middlewire
 app.use(express.json());
 app.use(cors());
 
